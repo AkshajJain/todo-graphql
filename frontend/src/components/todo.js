@@ -21,7 +21,7 @@ function Todo() {
         {
           query: `
             query {
-              getTasks {
+              allTasks {
                 id
                 name
                 description
@@ -37,7 +37,8 @@ function Todo() {
         }
       );
 
-      setTasks(response.data.data.getTasks);
+      setTasks(response.data.data.allTasks);
+      console.log(response.data.data);
     } catch (error) {
       console.error('Error fetching tasks:', error);
     }

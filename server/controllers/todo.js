@@ -43,36 +43,34 @@ exports.getTasks = async () => {
     }
 };
 
-exports.addTask = async (req) => {
+exports.addTask = async (name, description) => {
     try {
-
-        // console.log(args.input);
-        console.log(req.body);
         // Add task
-        const task = await Todo.create({title: req.body.name, description:input.description});
-        return task;
+        console.log(name, description);
+        const task = await Todo.create({title: name, description});
+        return {id: task.id, name: task.title, description: task.description};
     } catch (error) {
         console.error('Error:', error);
-        return ({ message: 'Failed to add task', error: error.message });
+        return 'Failed to add task';
     }
 };
 
-exports.updateTask = async (req, res) => {
+exports.updateTask = async (id, name , desc) => {
     try {
         // Update task
-        const task = await Todo.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        return ({ message: "Task updated successfully", task });
+        const task = await Todo.findByIdAndUpdate(id, {title: name, description: desc}, { new: true });
+        return {id: task.id, name: task.title, description: task.description}
     } catch (error) {
         console.error('Error:', error);
-        return ({ message: 'Failed to update task', error: error.message });
+        return 'Failed to update task';
     }
 };
 
-exports.delTask = async (req, res) => {
+exports.delTask = async (id) => {
     try {
         // Delete task
-        const task = await Todo.findByIdAndDelete(req.params.id);
-        retrun ({ message: "Task deleted successfully", task });
+        const task = await Todo.findByIdAndDelete(id);
+        return "Task deleted successfully";
     } catch (error) {
         console.error('Error:', error);
         return ({ message: 'Task not found', error: error.message });

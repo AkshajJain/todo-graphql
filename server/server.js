@@ -1,9 +1,7 @@
 // server.js
 require("dotenv").config()
+const {ApolloServer, gql} = require("apollo-server-express");
 const express = require("express");
-const cookieParser = require("cookie-parser");
-const {buildSchema} = require("graphql");
-const {graphqlHTTP} = require("express-graphql");
 const cors = require("cors");
 
 const {
@@ -15,12 +13,10 @@ const {
 } = require("./controllers/todo");
 
 const user = require("./routes/user")
-
 const connectDB = require("./config/db");
 
-const app = express();
 
-const schema = buildSchema(`
+const schema = gql`
     type Task {
         id: ID!
         name: String
@@ -28,41 +24,55 @@ const schema = buildSchema(`
     }
         
     type Query {
-        getTasks: [Task!]!
+        allTasks: [Task!]!
     }
         
     type Mutation {
-        createTask(name:String, description:String): Task!
+        createTask(name:String, description:String): Task
         deleteTask(id:ID!): String
         updateTask(id:ID!, name:String, description:String): Task
     }
-`);
+`;
 
-const root = {
-    getTasks: async ({}, {req}) => {return getTasks();},
-    createTask: async ({}, {req}) => {return addTask(req);},
-    deleteTask: async ({}, req, res) => {return delTask(req, res);},
-    updateTask: updateTask
-}
+const resolvers = {
+    Query: {
+      allTasks: async () => {
+        return await getTasks();
+      },
+    //   todo: async (_, { id }) => {
+    //     return await Todo.findById(id);
+    //   },
+    },
+    Mutation: {
+      createTask: async (_, { name, description }) => {
+        return await addTask(name, description);
+      },
+      updateTask: async (_, { id, name, description }) => {
+        return await updateTask(id, name, description);
+      },
+      deleteTask: async (_, { id }) => {
+        return await delTask(id);
+      },
+    },
+};
+
+const app = express();
+const server = new ApolloServer({ typeDefs: schema, resolvers });
 
 connectDB();
 
 app.use(cors()); // added
-app.use(express.json({ extended: false }));
-app.use(cookieParser());
+app.use(express.json());
 
 app.get("/", (req, res) => res.send("Server up and running"));
-
-// use routes
-app.use("/graphql", graphqlHTTP({
-    schema: schema,
-    rootValue: root,
-    graphiql: true
-}));
 app.use("/api/user", user);
-// setting up port
-const PORT = process.env.PORT || 8000;
 
+server.start().then(() => {
+server.applyMiddleware({ app, path:'/graphql' });
+
+// Start the server
+const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
-    console.log(`server is running on http://localhost:${PORT}`);
+    console.log(`Server ready at http://localhost:${PORT}${server.graphqlPath}`);
 });
+}).catch(err => console.error('Error starting server:', err));
